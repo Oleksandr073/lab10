@@ -1,12 +1,16 @@
+'use strict';
 
-const url = 'https://usersdogs.dmytrominochkin.cloud/';
+const BASE_API_URL = 'https://usersdogs.dmytrominochkin.cloud/';
 
-$.get(`${url}dogs`, massiv => {
-
+$.get(`${BASE_API_URL}dogs`, massiv => {
+    
     let dogs = $('.dog_item');
     dogs[0].style.visibility = 'visible';
 
-    if (massiv.length == 0) dogs[0].style.visibility = 'hidden';
+    if (massiv.length == 0) {
+        dogs[0].style.visibility = 'hidden';
+        $('body')[0].style.backgroundColor = 'red';
+    }
     for (let i = 1; i < massiv.length; i++) {
         dogs.after(dogs.clone());
     }
@@ -21,7 +25,7 @@ $.get(`${url}dogs`, massiv => {
         dogs[i].id = massiv[i].id.toString();
         dogName[i].textContent = massiv[i].title;
         dogSex[i].textContent = massiv[i].sex.toLowerCase().replace(/\w/, c => `${c.toUpperCase()}`);
-        dogPhoto[i].src = url + massiv[i].dogImage;
+        dogPhoto[i].src = BASE_API_URL + massiv[i].dogImage;
         dogPhoto[i].setAttribute('alt', `photo of a dog ${massiv[i].title}`);
     }
 
@@ -42,7 +46,7 @@ $.get(`${url}dogs`, massiv => {
     modal[0].style.height = `${scrollHeight}px`;
 
     function modalInfo(id) {
-        modalPhoto.attr('src', url +  massiv[id - 1].dogImage);
+        modalPhoto.attr('src', BASE_API_URL +  massiv[id - 1].dogImage);
         modalPhoto.attr('alt', `photo of a dog ${massiv[id - 1].title}`);
         modalName.text(massiv[id - 1].title);
         modalSex.text(massiv[id - 1].sex.toLowerCase().replace(/\w/, c => `${c.toUpperCase()}`));
