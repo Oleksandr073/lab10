@@ -59,7 +59,7 @@ $.get(`${BASE_API_URL}dogs`, massiv => {
             if (event.target.closest('.dog_item')) {
                 modal.show();
                 modalBody[0].style.top = window.pageYOffset + 30 + 'px';
-                modalInfo(Number(event.target.id));
+                modalInfo(Number(event.target.closest('.dog_item').id));
             }
             else if (!event.target.closest('.modal_body')) {
                 modal.hide();
