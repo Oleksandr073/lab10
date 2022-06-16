@@ -2,78 +2,99 @@
 
 const BASE_API_URL = 'https://usersdogs.dmytrominochkin.cloud/';
 
-$.get(`${BASE_API_URL}dogs`, massiv => {
-    
-    let dogs = $('.dog_item');
-    dogs[0].style.visibility = 'visible';
+async function callApi(endpoint) {
 
-    if (massiv.length == 0) {
-        dogs[0].style.visibility = 'hidden';
-        $('body')[0].style.backgroundColor = 'red';
+    const url = BASE_API_URL + endpoint;
+
+    return  await $.get(url, response =>  response)
+            .fail((error) => {throw error});
+}
+
+async function startApp() {
+    try {
+        const endpoint = 'dogs';
+        const response = await callApi(endpoint);
+
+        buildPage(response);
+    } catch (error) {
+        console.warn(error);
+        $('body')[0].innerHTML += `
+            <div class="error">
+                <p>Failed to load data</p>
+            </div>
+        `;
+    } finally {
+        $('.loader').hide();
     }
-    for (let i = 1; i < massiv.length; i++) {
-        dogs.after(dogs.clone());
+}
+
+function buildPage(response) {
+
+    function createDogCard(response) {
+        response.forEach(({ id, title, sex, age, description, dogImage }) => {
+            $('.dogs')[0].innerHTML += `
+                <li class="dog_item" id="${id}">
+                    <div class="dog_photo">
+                        <img src=${BASE_API_URL + dogImage} alt="photo of a dog ${title}">
+                    </div>
+                    <div class="dog_info">
+                        <h2 class="dog_name">${title}</h2>
+                        <h3 class="dog_sex">${sex.toLowerCase().replace(/\w/, c => c.toUpperCase())}</h3>
+                    </div>
+                </li>
+            `;
+        });
     }
 
-    dogs = $('.dog_item');
+    createDogCard(response);
 
-    const dogName = $('.dog_name');
-    const dogSex = $('.dog_sex');
-    const dogPhoto = $('.dog_photo img');
-
-    for (let i = 0; i < massiv.length; i++) {
-        dogs[i].id = massiv[i].id.toString();
-        dogName[i].textContent = massiv[i].title;
-        dogSex[i].textContent = massiv[i].sex.toLowerCase().replace(/\w/, c => `${c.toUpperCase()}`);
-        dogPhoto[i].src = BASE_API_URL + massiv[i].dogImage;
-        dogPhoto[i].setAttribute('alt', `photo of a dog ${massiv[i].title}`);
-    }
-
-    const modal = $('.modal');
-    const modalBody = $('.modal_body');
-    const modalPhoto = $('.modal_photo img');
-    const modalName = $('.modal_name');
-    const modalSex = $('.sex');
-    const modalAge = $('.age');
-    const modalDesc = $('.description');
-
-    let scrollHeight = Math.max(
-        document.body.scrollHeight, document.documentElement.scrollHeight,
-        document.body.offsetHeight, document.documentElement.offsetHeight,
-        document.body.clientHeight, document.documentElement.clientHeight
-    );
-
-    modal[0].style.height = `${scrollHeight}px`;
-
-    function modalInfo(id) {
-        modalPhoto.attr('src', BASE_API_URL +  massiv[id - 1].dogImage);
-        modalPhoto.attr('alt', `photo of a dog ${massiv[id - 1].title}`);
-        modalName.text(massiv[id - 1].title);
-        modalSex.text(massiv[id - 1].sex.toLowerCase().replace(/\w/, c => `${c.toUpperCase()}`));
-        modalAge.text(massiv[id - 1].age);
-        modalDesc.text(massiv[id - 1].description);
+    function modalInfo({ id, title, sex, age, description, dogImage }) {
+        const scrollHeight = Math.max(
+            document.body.scrollHeight, document.documentElement.scrollHeight,
+            document.body.offsetHeight, document.documentElement.offsetHeight,
+            document.body.clientHeight, document.documentElement.clientHeight
+        );
+        $('.modal')[0].style.height = `${scrollHeight}px`;
+        $('.modal')[0].innerHTML = `
+            <div class="modal_body active" style="top: ${window.pageYOffset + 30}px">
+                <div class="modal_photo">
+                <img src="${BASE_API_URL + dogImage}" alt="photo of a dog ${title}">
+                </div>
+                <div class="modal_info">
+                    <h2 class="modal_name">${title}</h2>
+                    <p class="modal_suptitle">Sex</p>
+                    <h3 class="modal_text sex">${sex.toLowerCase().replace(/\w/, c => c.toUpperCase())}</h3>
+                    <p class="modal_suptitle">Age</p>
+                    <h3 class="modal_text age">${age}</h3>
+                    <p class="modal_suptitle">Personality</p>
+                    <p class="modal_text description">${description}</p>
+                    <button class="modal_btn">
+                        <svg class="modal_ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M511.2 387l-23.25 100.8c-3.266 14.25-15.79 24.22-30.46 24.22C205.2 512 0 306.8 0 54.5c0-14.66 9.969-27.2 24.22-30.45l100.8-23.25C139.7-2.602 154.7 5.018 160.8 18.92l46.52 108.5c5.438 12.78 1.77 27.67-8.98 36.45L144.5 207.1c33.98 69.22 90.26 125.5 159.5 159.5l44.08-53.8c8.688-10.78 23.69-14.51 36.47-8.975l108.5 46.51C506.1 357.2 514.6 372.4 511.2 387z"/></svg>
+                        Adopt Me
+                    </button>
+                </div>
+            </div>
+        `;
     }
 
     $(document).on({
         'click': function (event) {
             if (event.target.closest('.dog_item')) {
-                modal.show();
-                modalBody[0].style.top = window.pageYOffset + 30 + 'px';
-                modalInfo(Number(event.target.closest('.dog_item').id));
+                modalInfo(response[event.target.closest('.dog_item').id - 1]);
+                $('.modal').show();
             }
             else if (!event.target.closest('.modal_body')) {
-                modal.hide();
+                $('.modal_body')[0].classList.remove('active');
+                $('.modal').hide();
             }
         },
         'keyup': function (event) {
-            if (event.code === 'Escape') {
-                modal.hide();
+            if (event.code === 'Escape' && !$('.modal')[0].classList.contains('hide')) {
+                $('.modal_body')[0].classList.remove('active');
+                $('.modal').hide();
             }
         }
     })
+}
 
-})
-.fail(() => {
-    $('.dog_item')[0].style.visibility = 'hidden';
-    $('body')[0].style.backgroundColor = 'red';
-})
+startApp();
